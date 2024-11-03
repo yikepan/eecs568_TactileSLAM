@@ -1,0 +1,31 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+defaults: 
+  - main: vitac
+  - launcher: basic
+  - _self_
+
+user: suddhu
+profile: False
+seed: 1
+gpu_id: 0
+create_display: False
+expt_name: "${main.train.train_mode}"
+vox_size: "${main.train.gt_voxel_size}"
+
+sweep_dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+hydra:
+  job_logging:
+    root:
+      handlers: []
+  job:
+    chdir: true
+  run:
+    dir: ${sweep_dir}/${main.data.object}/${main.data.log}/${main.mode}/${expt_name}_${seed}
+  sweep:
+    dir: ${sweep_dir}
+    subdir: ${main.data.object}/${main.data.log}/${main.mode}/${expt_name}_${hydra.job.num} # standard mode

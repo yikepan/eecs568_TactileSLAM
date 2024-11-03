@@ -1,0 +1,160 @@
+#!/bin/bash
+# Entrypoint bash script for neuralfeels
+# Usage: ./scripts/run DATASET SLAM_MODE MODALITY OBJECT LOG FPS RECORD OPEN3D
+#
+# Arguments:
+if [[ $1 == "--help" ]]; then
+    echo "Usage: ./scripts/run DATASET SLAM_MODE MODALITY OBJECT LOG FPS RECORD OPEN3D"
+    echo ""
+    echo "Arguments:"
+    echo "  DATASET: string    # The dataset to be used, options are 'feelsight', 'feelsight_real'"
+    echo "  SLAM_MODE: string  # The mode to be used, options are 'slam', 'pose', 'map'"
+    echo "  MODALITY: string   # The modality to be used, options are 'vitac', 'vi', 'tac'"
+    echo "  OBJECT: string     # The object to be used, e.g., '077_rubiks_cube'"
+    echo "  LOG: string        # The log identifier, e.g., '00', '01', '02'"
+    echo "  FPS: integer       # The frames per second, e.g., '1', '5'"
+    echo "  RECORD: integer    # Whether to record the session, options are '1' (yes) or '0' (no)"
+    echo "  OPEN3D: integer    # Whether to use Open3D, options are '1' (yes) or '0' (no)"
+    echo ""
+    echo "Presets:"
+    echo "  --slam-sim         # Run neural SLAM in simulation with rubber duck"
+    echo "  --pose-sim         # Run neural tracking in simulation with Rubik's cube"
+    echo "  --slam-real        # Run neural SLAM in real-world with bell pepper"
+    echo "  --pose-real        # Run neural tracking in real-world with large dice"
+    echo "  --three-cam        # Three camera pose tracking in real-world with large dice"
+    echo "  --occlusion-sim    # Run neural tracking in simulation with occlusion logs"
+    exit 0
+elif [[ $1 = "--slam-sim" ]]; then
+    # Example of neural SLAM in simulation with rubber duck
+    DATASET="feelsight"
+    SLAM_MODE="slam"
+    MODALITY="vitac"
+    OBJECT="contactdb_rubber_duck"
+    LOG="00"
+    FPS=1
+    RECORD=1
+    OPEN3D=1
+elif [[ $1 = "--pose-sim" ]]; then
+    # Example of neural tracking in simulation with Rubik's cube
+    DATASET="feelsight"
+    SLAM_MODE="pose"
+    MODALITY="vitac"
+    OBJECT="077_rubiks_cube"
+    LOG="00"
+    FPS=1
+    RECORD=1
+    OPEN3D=1
+elif [[ $1 = "--slam-real" ]]; then
+    # Example of neural SLAM in real-world with bell pepper
+    DATASET="feelsight_real"
+    SLAM_MODE="slam"
+    MODALITY="vitac"
+    OBJECT="bell_pepper"
+    LOG="00"
+    FPS=1
+    RECORD=1
+    OPEN3D=1
+elif [[ $1 = "--pose-real" ]]; then
+    # Example of neural tracking in real-world with large dice
+    DATASET="feelsight_real"
+    SLAM_MODE="pose"
+    MODALITY="vitac"
+    OBJECT="large_dice"
+    LOG="00"
+    FPS=1
+    RECORD=1
+    OPEN3D=1
+elif [[ $1 = "--three-cam" ]]; then
+    # Three camera pose tracking in real-world with large dice
+    DATASET="feelsight_real"
+    SLAM_MODE="pose"
+    MODALITY="vi"
+    OBJECT="large_dice"
+    LOG="00"
+    FPS=1
+    RECORD=1
+    OPEN3D=1
+    EXTRA_ARGS="main=baseline"
+elif [[ $1 = "--occlusion-sim" ]]; then
+    # Example of neural tracking in simulation with occlusion logs
+    DATASET="feelsight"
+    SLAM_MODE="pose"
+    MODALITY="vitac"
+    OBJECT="077_rubiks_cube"
+    LOG="00"
+    FPS=1
+    RECORD=1
+    OPEN3D=1
+    EXTRA_ARGS="main.sensor0.masks=read main.occlusion=True"
+else
+    if [ $# -lt 8 ]; then
+        echo "Error: Missing arguments."
+        echo "Usage: $0 DATASET SLAM_MODE MODALITY OBJECT LOG FPS RECORD OPEN3D"
+        echo "You provided $# arguments, but at least 8 are required."
+        exit 1
+    fi
+    DATASET=$1
+    SLAM_MODE=$2
+    MODALITY=$3
+    OBJECT=$4
+    LOG=$5
+    FPS=$6
+    RECORD=$7
+    OPEN3D=$8
+    array=($@)
+    len=${#array[@]}
+    EXTRA_ARGS=${array[@]:8:$len}
+fi
+
+if [[ ${DATASET} != "feelsight" && ${DATASET} != "feelsight_real" ]]; then
+    echo "Error: Invalid DATASET. Options are 'feelsight', 'feelsight_real'."
+    exit 1
+elif [[ ${SLAM_MODE} != "slam" && ${SLAM_MODE} != "pose" && ${SLAM_MODE} != "map" ]]; then
+    echo "Error: Invalid SLAM_MODE. Options are 'slam', 'pose', 'map'."
+    exit 1
+elif [[ ${MODALITY} != "vitac" && ${MODALITY} != "vi" && ${MODALITY} != "tac" ]]; then
+    echo "Error: Invalid MODALITY. Options are 'vitac', 'vi', 'tac'."
+    exit 1
+elif [[ ! ${FPS} =~ ^[0-9]+$ ]]; then
+    echo "Error: Invalid FPS. Must be a positive integer."
+    exit 1
+elif [[ ${RECORD} != 0 && ${RECORD} != 1 ]]; then
+    echo "Error: Invalid RECORD. Options are '0' (no) or '1' (yes)."
+    exit 1
+elif [[ ${OPEN3D} != 0 && ${OPEN3D} != 1 ]]; then
+    echo "Error: Invalid OPEN3D. Options are '0' (no) or '1' (yes)."
+    exit 1
+fi
+
+echo "Extra arguments: ${EXTRA_ARGS}"
+
+if [ $RECORD -eq 1 ]; then
+    record_string="main.viz.misc.record=True main.viz.misc.render_stream=True"
+else
+    record_string=""
+fi
+
+if [ $OPEN3D -eq 1 ]; then
+    open3d_string="main.viz.misc.render_open3d=True"
+else
+    open3d_string="main.viz.misc.render_open3d=False"
+fi
+
+dir=$(date +\"outputs/%Y-%m-%d/%H-%M-%S\")
+argstring="main=${MODALITY} \
+main.data.object=${OBJECT} \
+main.data.log=${LOG} \
+main.data.dataset=${DATASET} \
+main.train.train_mode=${SLAM_MODE} \
+main.viz.meshes.mesh_rec_crop=False \
+main.viz.debug.origin=True \
+main.viz.meshes.show_gt_object=False \
+main.viz.meshes.transparent=False \
+main.data.train_fps=${FPS} \
+main.viz.layers.pointcloud=None \
+${record_string} \
+sweep_dir=${dir} \
+${EXTRA_ARGS}"
+
+echo -e "python scripts/run.py ${argstring}"
+python scripts/run.py ${argstring}

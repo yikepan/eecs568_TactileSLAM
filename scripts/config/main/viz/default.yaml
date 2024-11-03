@@ -1,0 +1,40 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Visualizer settings
+
+meshes: 
+  mesh_rec: True
+  mesh_rec_crop: False
+  write_all_meshes: False
+  save_rotate: True
+  save_neural_field: True
+  allegro: True
+  has_gt_object: True # if dataset does not have gt object, set to False
+  show_gt_object: False
+  sensors_est: False 
+  transparent: False 
+
+debug: 
+  rays: False
+  frontend: False
+  bbox: False 
+  origin: False 
+
+layers: 
+  colormap: Color # Sensor, Normals, FScore, Color, n/a
+  keyframes: None # None, Latest, All
+  pointcloud: None # None, Both, Vision, Touch
+
+misc: 
+  record: False
+  downsample_threshold: 50000
+  rotate: False
+  follow : False
+  render_stream: False 
+  render_open3d: True
+
+
+

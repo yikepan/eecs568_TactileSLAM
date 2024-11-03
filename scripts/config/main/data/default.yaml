@@ -1,0 +1,9 @@
+dataset: feelsight_real
+object: bell_pepper
+log: '00'
+
+dataset_path: "data/${main.data.dataset}/${main.data.object}/${main.data.log}"
+
+gt_sdf_dir: data/assets/gt_models
+
+train_fps: 1

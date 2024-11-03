@@ -1,0 +1,22 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Vision-only condfig
+
+defaults:
+  - data: default
+  - eval: default 
+  - train: default
+  - pose: default
+  - scene: default
+  - viz: default
+  - sensor@sensor0: realsense
+  - _self_
+
+mode: vision
+occlusion: False
+
+sensor0: 
+  name: realsense_front_left

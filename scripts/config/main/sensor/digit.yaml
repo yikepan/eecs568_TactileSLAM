@@ -1,0 +1,38 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Config for DIGIT sensor
+
+name:
+
+tactile_depth:
+  mode: vit
+  use_real_data: True
+
+sampling: 
+  n_rays: 5 # samples/area should be somewhat consistent with vision
+  n_strat_samples: 10
+  n_surf_samples: 10
+  depth_range: [-0.01, 0.05]   # sampling from behind the digit camera to beyond the surface
+  surface_samples_offset: 1e-3 # needs to be small to capture surface detail
+  dist_behind_surf: 2e-2 # needs to be larger to carve out object extents
+  loss_ratio : 0.1 # slower lr for tactile because of less FoV
+  free_space_ratio: 0.0  # used for mapping, but not tracking
+
+kf_min_loss: 1e-2
+
+# taken from config_digit_shadow.yml from tacto
+gel:
+  origin: [0.022, 0, 0] # Center coordinate of the gel, in meters
+  width: 0.02 # Width of the gel, y-axis, in meters
+  height: 0.03 # Height of the gel, z-axis, in meters
+  curvature: True  # Model the gel as curve? True/False
+  curvatureMax: 0.004  # Deformation of the gel due to convexity
+  R: 0.1 # Radius of curved gel
+  countW: 100 # Number of samples for horizontal direction; higher the finer details
+
+viz:
+  reduce_factor: 1
+  reduce_factor_up: 1

@@ -1,0 +1,25 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Eval parameters
+
+do_eval: 0
+eval_freq_s: 1
+sdf_eval: 1
+mesh_eval: 0
+
+save_period: 10
+save_slices: 0
+save_meshes: 0
+
+# if true saves intermediate reconstruction (mesh/point cloud) instead of just final one
+save_intermediate_recons: True
+# if true saves point clouds from SDF (at the same time mesh is saved)
+save_rendered_pcs: False  
+# this is a maximum. The actual number might be less due to filtering rays not hitting a surface
+num_points_pcs: 2000 
+num_points_f_score: 10000
+f_score_T: [2e-2, 1.8e-2, 1.6e-2, 1.4e-2, 1.2e-2, 1e-2, 9e-3, 8e-3, 7e-3, 6e-3, 5e-3, 4e-3, 3e-3, 2e-3, 1e-3] # range from 2cm to 1mm
+which_f_score: 10 # which one to display live, choose index of 5e-3

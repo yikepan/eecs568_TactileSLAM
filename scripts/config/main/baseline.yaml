@@ -1,0 +1,28 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Baseline three-camera config
+
+defaults:
+  - data: default
+  - eval: default 
+  - train: default
+  - pose: default
+  - scene: default
+  - viz: default
+  - sensor@sensor0: realsense
+  - sensor@sensor1: realsense
+  - sensor@sensor2: realsense
+  - _self_
+
+mode: baseline
+occlusion: False
+
+sensor0: 
+  name: realsense_front_left
+sensor1: 
+  name: realsense_back_right
+sensor2: 
+  name: realsense_top_down

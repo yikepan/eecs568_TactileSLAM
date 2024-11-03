@@ -1,0 +1,51 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Optimizer class
+
+optimizer:
+  device: cuda
+  checkpoint:
+  incremental : True
+  lr: 2e-4 
+  weight_decay: 1e-6
+  num_iters: 1
+  map_init_iters: 500
+
+model:
+  do_active: 0
+  scale_output: 1.0
+  noise_std: 
+    feelsight : [2e-3, 2e-3] # [vision, touch]
+    feelsight_real : [1e-3, 5e-3] # [vision, touch]
+  window_size: 10
+  num_layers: 3 # num_layers - 1 hidden layers
+  hidden_feature_size: 64
+  kf_time : 0.2
+  milestones: [1, 2, 3]
+  gamma: 0.5
+
+pos_encoding: 
+  n_levels: 19 # previous: 19
+  n_features_per_level: 2
+  log2_hashmap_size:  23 # previous: 23
+  base_resolution: 4
+  per_level_scale: 1.3
+
+loss:
+  bounds_method: pc
+  loss_type: L1
+  trunc_weight: 10.0
+  eik_weight: 0.0
+  trunc_distance: 5e-3
+
+train_mode: slam # pose, map, slam
+gt_voxel_size: 5e-4
+load_checkpoint_model: False
+grasp: False
+
+batch:
+  train_time_min: 0.5
+  max_frames: 10

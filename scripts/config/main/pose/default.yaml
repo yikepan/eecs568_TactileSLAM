@@ -1,0 +1,45 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Pose opt class
+
+timer: false
+grasp_threshold: 100
+show_samples: False
+method: second-order # first-order, second-order
+window_size: 3 # TODO: change this 
+
+second_order:
+    optimizer_cls: LevenbergMarquardt
+    linear_solver_cls: CholeskyDenseSolver
+    linearization_cls: DenseLinearization
+    optimizer_kwargs:
+      track_best_solution: True
+      verbose: false
+      __keep_final_step_size__: true
+      adaptive_damping: true
+    autograd_strategy: forward-mode # autograd_strategy: forward-mode for pose estimation
+    tsdf_method: analytic # [analytic, numerical, autodiff]
+    vectorize: true # true for pose estimation
+    test_jacobians: false # debugging only
+    empty_cuda_cache: false
+    lm_iters: 20
+    num_iters: 2
+    step_size: 1.0
+    tsdf_w: 1e-2
+    regularize: true
+    reg_w: 1e-2
+    icp: true
+    icp_w: 1e0
+    icp_fitness: 0.5
+    icp_inlier_rmse: 5e-3
+    icp_thresh: [5, 0.01] # [rotation (deg), translation (m)]
+
+
+loss_type: L1
+n_rays_per_sensor_vision: 300 # total rays = n_rays_per_sensor * n_valid_sensors
+n_rays_per_sensor_tactile: 25 # total rays = n_rays_per_sensor * n_valid_sensors
+w_vision: 1.0
+w_tactile: 1.0

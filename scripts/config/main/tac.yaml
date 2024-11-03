@@ -1,0 +1,31 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Tactile-only config
+
+defaults:
+  - data: default
+  - eval: default 
+  - train: default
+  - pose: default
+  - scene: default
+  - viz: default
+  - sensor@sensor0: digit
+  - sensor@sensor1: digit
+  - sensor@sensor2: digit
+  - sensor@sensor3: digit
+  - _self_
+
+mode: tactile
+occlusion: False
+
+sensor0: 
+  name: digit_thumb
+sensor1: 
+  name: digit_index
+sensor2: 
+  name: digit_middle
+sensor3: 
+  name: digit_ring

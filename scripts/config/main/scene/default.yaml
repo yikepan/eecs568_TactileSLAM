@@ -1,0 +1,13 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+
+grid_dim : 200
+crop_dist: 5e-3
+mesh_interval: 10
+
+object_limits : 0
+rotate_z: 0
+extents:  [0.15, 0.15, 0.15]
