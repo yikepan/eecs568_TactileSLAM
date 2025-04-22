@@ -148,3 +148,13 @@ __MACOSX
 
 # Misc
 .nfs*
+
+# Third-party
+thirdparty/
+
+plot/
+plot_fmr/
+
+report/
+
+.git_archive/

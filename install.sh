@@ -79,3 +79,6 @@ pip install -e .
 
 # Make entrypoint executable
 chmod +x scripts/run
+
+# Running Script
+bash ./scripts/run --pose-sim

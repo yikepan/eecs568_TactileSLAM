@@ -154,6 +154,14 @@ def optim_iter(trainer: "Trainer", t, start_optimize=True):
 
     trainer.get_latest_depth_renders()
     gpu_usage_check()
+    
+    # Check memory usage
+    available, total = torch.cuda.mem_get_info("cuda:0")
+    print(f"Optim_iter GPU memory usage: {available / (1024**3):.2f} GB available out of {total / (1024**3):.2f} GB total")
+    
+    # Visualize current SE(3) pose
+    trainer.visualize_pose()
+    
     return status, kf_set, end_all
 
 
@@ -193,6 +201,7 @@ def main(cfg: DictConfig):
             )
             app.run()
         w.save_data()  # save all the images, meshes, plots, etc.
+        w.visualize_optimized_pose()
         # clear memory
         gc.collect()
         torch.cuda.empty_cache()

@@ -18,8 +18,10 @@ import torch.nn as nn
 from scipy.spatial.transform import Rotation as R
 from termcolor import cprint
 
-from neuralfeels.geometry.align_utils import register
+from neuralfeels.geometry.align_utils import register, register_fmr, register_global
 from neuralfeels.modules import loss
+
+from thirdparty.fmr.demo import draw_registration_result, draw_registration_result_and_save
 
 DTYPE = torch.float32
 
@@ -127,8 +129,8 @@ class PoseOptimizer(nn.Module):
         self.all_frame_ids, _ = torch.sort(
             torch.unique(torch.cat(list(self.frame_ids.values())))
         )
-        # for i, frame_id in enumerate(self.all_frame_ids):
-        #     self.pose_history[frame_id.item()] = self.object_pose_batch[[i]]
+        for i, frame_id in enumerate(self.all_frame_ids):
+            self.pose_history[frame_id.item()] = self.object_pose_batch[[i]]
 
     def addSDF(self, frozen_sdf):
         self.frozen_sdf_map = frozen_sdf
@@ -266,20 +268,39 @@ class PoseOptimizer(nn.Module):
         )  # previous frame
 
         # skip if either pointcloud is empty
+        # breakpoint()
         if not (len(source_pcd.points) == 0 or len(target_pcd.points) == 0):
             # get the registration
-            T_reg, metrics_reg = register(
-                points3d_1=source_pcd,
-                points3d_2=target_pcd,
-                debug_vis=False,
-            )
-
-            # skip if the registration is bad
-            if not (
-                metrics_reg[0] == 0
-                or metrics_reg[0] < min_fitness
-                or metrics_reg[1] > max_inlier_rmse
-            ):
+            # T_reg, metrics_reg = register(
+            #     points3d_1=source_pcd,
+            #     points3d_2=target_pcd,
+                # debug_vis=False,
+            # )
+            # o3d.io.write_point_cloud("C:\Workspace\Codebase\\neuralfeels\source_pcd.ply", source_pcd)
+            # o3d.io.write_point_cloud("C:\Workspace\Codebase\\neuralfeels\\target_pcd.ply", target_pcd)
+            # print(T_reg)
+            # breakpoint()
+            # metrics_reg = [1, 100, 0]
+            voxel_size = 0.005
+            
+            T_est = register_fmr(points3d_1=source_pcd, points3d_2=target_pcd, voxel_size=voxel_size)
+            T_reg = np.linalg.inv(T_est)
+            # T_reg = register_global(source_pcd, target_pcd, voxel_size)
+            
+            # Visualization
+            # p0 = source_pcd.voxel_down_sample(voxel_size=0.005)
+            # p1 = target_pcd.voxel_down_sample(voxel_size=0.005)
+            # draw_registration_result(p0, p1, T_reg)
+            # draw_registration_result_and_save(p0, p1, T_reg)
+            # breakpoint()
+            
+            # # skip if the registration is bad
+            # if not (
+            #     metrics_reg[0] == 0
+            #     or metrics_reg[0] < min_fitness
+            #     or metrics_reg[1] > max_inlier_rmse
+            # ):
+            if True:
                 # convert 3x3 rotation matrix to euler angles T_reg[:3, :3]
                 r = R.from_matrix(np.array(T_reg[:3, :3]))
                 T_euler = r.as_euler("xyz", degrees=True)
@@ -325,7 +346,6 @@ class PoseOptimizer(nn.Module):
         """
         Optimize SE(3) pose using theseus w.r.t. neural field + pose regularization + ICP constraint
         """
-
         sample_pts = {
             "pc": [],
             "depth_sample": [],
@@ -455,6 +475,7 @@ class PoseOptimizer(nn.Module):
             sample_pts = self.expand_samples(sample_pts, sample_pts_)
 
         pg_batch = self.object_pose_batch
+        # breakpoint()
 
         theseus_inputs = {}
         if self.pose_cfg.timer:
@@ -679,6 +700,7 @@ class PoseOptimizer(nn.Module):
         self.optimized_pose_batch = info.best_solution["pose_batch"].detach()
         self.optimized_pose_batch = th.SE3(tensor=self.optimized_pose_batch)
         self.optimized_pose_batch.to(self.frozen_sdf_map.device)
+        # breakpoint()
         pose_loss = info.last_err[-1].item()
         time_string = ""
         if self.pose_cfg.timer:

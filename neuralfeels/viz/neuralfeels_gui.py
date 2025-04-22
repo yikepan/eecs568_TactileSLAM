@@ -854,6 +854,16 @@ class GUI:
         print(f"Saving experiment stats in {save_file}")
         with open(save_file, "wb") as file:
             pickle.dump(self.trainer.save_stats, file)
+            
+    def visualize_optimized_pose(self):
+        """
+        Visualize the optimized pose of the object
+        """
+        gt_pose = self.trainer.save_stats["pose"]["gt_pose"]
+        opt_pose = self.trainer.save_stats["pose"]["opt_pose"]
+        
+        breakpoint()
+        
 
     def get_orbit(self, final_mesh, timsteps=400, num_orbits=1):
         """
@@ -1339,6 +1349,7 @@ class GUI:
             if self.is_running:
                 # -------------------------------------------- used to be in a loop
                 # training steps ------------------------------
+
                 info, new_kf_set, end = self.optim_iter(
                     trainer=self.trainer,
                     t=self.iter,

@@ -48,6 +48,8 @@ from neuralfeels.modules.object import Object
 from neuralfeels.modules.sensor import get_center_of_grasp
 from neuralfeels.viz import draw
 
+from neuralfeels.viz import plot_pose
+
 # quicklink to the root and folder directories
 root = git.Repo(".", search_parent_directories=True).working_tree_dir
 
@@ -173,7 +175,10 @@ class Trainer:
         self.touch_tree = None
 
         self.save_stats = {
-            "pose": {"errors": [], "timing": []},
+            "pose": {
+                "opt_pose": [],
+                "gt_pose": [],
+                "errors": [], "timing": []},
             "map": {"errors": [], "timing": []},
             "optimizer": self.cfg_pose.second_order.tsdf_method,
             "cameras": [s for s in self.sensor_list if "realsense" in s],
@@ -244,8 +249,18 @@ class Trainer:
         if not self.incremental:
             print("Offline mode - adding all frames")
             self.add_all_frames()
+            
+        # check memory usage
+        available, total = torch.cuda.mem_get_info("cuda:0")
+        print(
+            f"Trainer Initialization Memory usage: {available / (1024**3)}GB available out of {total / (1024**3)}GB"
+        )
 
     # Init functions ---------------------------------------
+    
+    def visualize_pose(self):
+        plot_pose.visualize_pose(self.save_stats, save_path='./plot')
+        
 
     def get_latest_frame_id(self):
         """
@@ -2006,6 +2021,7 @@ class Trainer:
                 tensor=self.object.object_pose_track[init_frames][:, :3, :].clone()
             )
             self.pose_optimizer.addPoses(object_pose_batch)
+            
 
             try:
                 pc, pose_loss = self.pose_optimizer.optimize_pose_theseus(
@@ -2044,6 +2060,14 @@ class Trainer:
             updated_pose_batch, object_pose_gt, self.current_time
         )
         self.save_stats["pose"]["errors"].append(pose_error)
+        
+        # save optimized pose and ground truth pose
+        self.save_stats["pose"]["gt_pose"].append(
+            object_pose_gt[-1].cpu().numpy().squeeze()
+        )
+        self.save_stats["pose"]["opt_pose"].append(
+            updated_pose_batch[-1].cpu().numpy().squeeze()
+        )
 
         return pose_loss
 

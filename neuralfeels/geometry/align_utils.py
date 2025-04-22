@@ -10,6 +10,9 @@ import copy
 import numpy as np
 import open3d as o3d
 
+from thirdparty.fmr.model import PointNet, Decoder, SolveRegistration
+from thirdparty.fmr.demo import Demo
+import torch
 
 def visualize_registration(source, target, transformation, vis3d=None, colors=None):
     """Open3D visualizer for registration"""
@@ -64,6 +67,92 @@ def icp(
     return transformation, metrics
 
 
+def register_fmr(
+    points3d_1, 
+    points3d_2,
+    voxed_size,
+):
+    """
+    Register two point clouds using fmr
+    
+    Args:
+        points3d_1: np.array()
+        
+    """
+    # Load fmr model
+    fmr = Demo()
+    model = fmr.create_model()
+    pretrained_path = "C:\Workspace\Codebase\\neuralfeels\\thirdparty\\fmr\\result\\fmr_model_7scene.pth"
+    model.load_state_dict(torch.load(pretrained_path))
+    device = "cpu"
+    model.to(device)
+    
+    # Downsample points
+    downpcd1 = points3d_1.voxel_down_sample(voxel_size=voxed_size)
+    p1 = np.asarray(downpcd1.points)
+    p1 = np.expand_dims(p1, 0)
+    downpcd2 = points3d_2.voxel_down_sample(voxel_size=voxed_size)
+    p2 = np.asarray(downpcd2.points)
+    p2 = np.expand_dims(p2, 0)
+    
+    # Estimation point registration
+    T_est = fmr.evaluate(model, p1, p2, device) # array(4, 4)
+    
+    # Convert data type to array
+    T_est = np.array(T_est)
+    
+    return T_est
+
+def preprocess_point_cloud(pcd, voxel_size):
+    pcd_down = pcd.voxel_down_sample(voxel_size)
+
+    radius_normal = voxel_size * 2
+    pcd_down.estimate_normals(
+        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+
+    radius_feature = voxel_size * 5
+    pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
+        pcd_down,
+        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
+    return pcd_down, pcd_fpfh
+
+def prepare_dataset(source_pcd, target_pcd, voxel_size):
+    source_down, source_fpfh = preprocess_point_cloud(source_pcd, voxel_size)
+    target_down, target_fpfh = preprocess_point_cloud(target_pcd, voxel_size)
+    return source_pcd, target_pcd, source_down, target_down, source_fpfh, target_fpfh
+
+def execute_global_registration(source_down, target_down, source_fpfh,
+                                target_fpfh, voxel_size):
+    distance_threshold = voxel_size * 1.5
+    result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
+        source_down, target_down, source_fpfh, target_fpfh, True,
+        distance_threshold,
+        o3d.pipelines.registration.TransformationEstimationPointToPoint(False),
+        3, [
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(
+                0.9),
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
+                distance_threshold)
+        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.999))
+    return result
+
+def refine_registration(result_ransac, source, target, voxel_size):
+    distance_threshold = voxel_size * 0.4
+    result = o3d.pipelines.registration.registration_icp(
+        source, target, distance_threshold, result_ransac.transformation,
+        o3d.pipelines.registration.TransformationEstimationPointToPlane())
+    return result
+
+def register_global(source_pcd, target_pcd, voxel_size):
+    source, target, source_down, target_down, source_fpfh, target_fpfh = prepare_dataset(source_pcd, target_pcd, voxel_size)
+    result_ransac = execute_global_registration(source_down, target_down, source_fpfh, target_fpfh, voxel_size)
+    source.estimate_normals(
+        o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
+    target.estimate_normals(
+        o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2, max_nn=30))
+    result_icp = refine_registration(result_ransac, source, target, voxel_size)
+    return result_icp.transformation
+    
 def register(
     points3d_1,
     points3d_2,
@@ -95,3 +184,11 @@ def register(
         )
 
     return T_reg, metrics_reg
+
+if __name__ == '__main__':
+    source = o3d.io.read_point_cloud("C:\Workspace\Codebase\\neuralfeels\\thirdparty\\fmr\data\\neuralfeels\source_pcd.ply")
+    target = o3d.io.read_point_cloud("C:\Workspace\Codebase\\neuralfeels\\thirdparty\\fmr\data\\neuralfeels\\target_pcd.ply")
+    T_est = register_fmr(source, target)
+    print(f"fmr: {T_est}")
+    T_icp, _ = register(source, target)
+    print(f"icp: {T_icp}")
